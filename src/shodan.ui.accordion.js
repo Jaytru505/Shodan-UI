@@ -42,7 +42,7 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
 
       // toggleSelector (String)
       // CSS selector for the toggle. Should be unique.
-      toggleSelector: 'h3',
+      toggleSelector: '.hd',
 
       // transition (String)
       // Scripty2 animation transition preset.
@@ -50,40 +50,58 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
       transition: 'sinusoidal'
     }, options || {});
     $super(el, this.options);
-    this.content = this.el.down(this.options.contentSelector);
     this.build();
   },
   /**
    *  Shodan.UI.SlideyPanel.build()
    **/
   build: function() {
-    // sanitize the CSS on the content container
-    this.content.setStyle({
+    this.content = this.el.down(this.options.contentSelector);
+
+    this._hide = this.hideContent.curry(function() {
+      this.el.removeClassName(this.options.openClass);
+      // if one has been, set execute the callback function
+      if (typeof this.options.callback === 'function') {
+        this.options.callback();
+      }
+    }.bind(this), this.content);
+
+    this.reveal = this.revealContent.curry(function() {
+      this.el.addClassName(this.options.openClass);
+      // if one has been, set execute the callback function
+      if (typeof this.options.callback === 'function') {
+        this.options.callback();
+      }
+    }.bind(this), this.content);
+
+    this.resetContentCSS(this.content);
+    // if autohide is set, auto... hide...
+    if (this.options.autoHide) {
+      this._hide();
+    }
+    this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
+  },
+  /**
+   *  Shodan.UI.SlideyPanel.resetContentCSS()
+   *
+   *  Sanitize the CSS on the content container
+   **/
+  resetContentCSS: function(content) {
+    content.setStyle({
       border: 'none',
       margin: 0,
       padding: 0,
       overflow: 'hidden'
     });
-    // if autohide is set, auto... hide... um
-    if (this.options.autoHide) {
-      this.hideContent();
-    }
-    this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
   },
   /**
    *  Shodan.UI.SlideyPanel.revealContent()
    **/
-  revealContent: function() {
+  revealContent: function(after, content) {
     // grab the content height from the elements data store
-    var h = this.content.retrieve('openHeight');
-    this.content.morph('height:'+h+'px', {
-      after: function() {
-        this.el.addClassName(this.options.openClass);
-        // if one has been, set execute the callback function
-        if (typeof this.options.callback === 'function') {
-          this.options.callback();
-        }
-      }.bind(this),
+    var h = content.retrieve('openHeight');
+    content.morph('height:'+h+'px', {
+      after: after,
       duration: this.options.duration,
       transition: this.options.transition
     });
@@ -91,31 +109,26 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
   /**
    *  Shodan.UI.SlideyPanel.hideContent()
    **/
-  hideContent: function() {
+  hideContent: function(after, content) {
     // grab the height of the content and store it on the
     // element for later. We do this every time on the off
     // chance that the content height might change.
-    var h = this.content.measure('margin-box-height');
-    this.content.store('openHeight', h);
-    this.content.morph('height:0', {
-      after: function() {
-        this.el.removeClassName(this.options.openClass);
-        // if one has been, set execute the callback function
-        if (typeof this.options.callback === 'function') {
-          this.options.callback();
-        }
-      }.bind(this),
+    var h = content.measure('margin-box-height');
+    content.store('openHeight', h);
+    content.morph('height:0', {
+      after: after,
       duration: this.options.duration,
       transition: this.options.transition
     });
   },
   /**
-   *  Shodan.UI.SlideyPanel.onClick(event)
+   *  Shodan.UI.SlideyPanel.onClick(event, el)
    *  - event (Event): native event instance
+   *  - el (DOMElement): target DOM element
    **/
-  onClick: function(e) {
+  onClick: function(e, el) {
     e.stop();
-    (this.el.hasClassName(this.options.openClass)) ? this.hideContent() : this.revealContent();
+    (this.el.hasClassName(this.options.openClass)) ? this._hide() : this.reveal();
   }
 });
 
@@ -126,28 +139,90 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
  *  An extension of the slidey panel.
  **/
 Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
+  /**
+   *  new Shodan.UI.Accordion(element[, options])
+   *  - element (String): DOM Element or ID of the slidey panel container
+   *  - options (Object): Object containing various configuration options
+   *
+   **/
   initialize: function($super, el, options) {
     this.options = Object.extend({
+      // allowMultiOpen (String)
+      // Set to true if more than one item can be open at once.
+      allowMultiOpen: false,
 
+      // contentSelector (String)
+      // CSS selector for the sub menu to be toggled.
+      contentSelector: '.sub'
     }, options || {});
     $super(el, this.options);
   },
+  /**
+   *  Shodan.UI.Accordion.build()
+   **/
   build: function() {
+    var firstItem = this.el.down('li');
+    this.el.select(this.options.contentSelector).each(function(el) {
+      this.resetContentCSS(el);
+    }, this);
     this.closeAll();
-    this.slideDown(this.el.down(this.options.toggleSelector));
+    this.revealContent(function() {
+      firstItem.addClassName(this.options.openClass);
+      // if one has been, set execute the callback function
+      if (typeof this.options.callback === 'function') {
+        this.options.callback();
+      }
+    }.bind(this), firstItem.down(this.options.contentSelector));
     this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
   },
+  /**
+   *  Shodan.UI.Accordion.closeAll()
+   **/
   closeAll: function() {
-    this.el.select(this.options.triggerSelector).each(function(el) {
-      this.slideUp(el);
+    this.el.select(this.options.contentSelector).each(function(el) {
+      this.hideContent(function() {
+        el.previous(this.options.toggleSelector).removeClassName(this.options.openClass);
+        // if one has been, set execute the callback function
+        if (typeof this.options.callback === 'function') {
+          this.options.callback();
+        }
+      }.bind(this), el);
     }.bind(this));
   },
+  /**
+   *  Shodan.UI.Accordion.onClick(event, el)
+   *  - event (Event): native event instance
+   *  - el (DOMElement): target DOM element
+   **/
   onClick: function(e, el) {
-    if ($(el).next('.'+this.options.contentClass).hasClassName(this.options.openClass)) {
-      this.slideUp(el);
+    var content = $(el).next(this.options.contentSelector),
+        clickedLi = el.up('li'), open;
+
+    if (clickedLi.hasClassName(this.options.openClass)) {
+      this.hideContent(function() {
+        clickedLi.removeClassName(this.options.openClass);
+        // if one has been, set execute the callback function
+        if (typeof this.options.callback === 'function') {
+          this.options.callback();
+        }
+      }.bind(this), clickedLi.down(this.options.contentSelector));
     } else {
-      this.slideUp(this.el.down('.'+this.options.openClass));
-      this.slideDown(el);
+      if ((open = this.el.down('.'+this.options.openClass)) && !this.options.allowMultiOpen) {
+        this.hideContent(function() {
+          open.removeClassName(this.options.openClass);
+          // if one has been, set execute the callback function
+          if (typeof this.options.callback === 'function') {
+            this.options.callback();
+          }
+        }.bind(this), open.down(this.options.contentSelector));
+      }
+      this.revealContent(function() {
+        content.up('li').addClassName(this.options.openClass);
+        // if one has been, set execute the callback function
+        if (typeof this.options.callback === 'function') {
+          this.options.callback();
+        }
+      }.bind(this), content);
     }
   }
 });
