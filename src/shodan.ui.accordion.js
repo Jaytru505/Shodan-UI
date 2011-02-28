@@ -57,7 +57,6 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
    **/
   build: function() {
     this.content = this.el.down(this.options.contentSelector);
-
     this._hide = this.hideContent.curry(function() {
       this.el.removeClassName(this.options.openClass);
       // if one has been, set execute the callback function
@@ -65,7 +64,6 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
         this.options.callback();
       }
     }.bind(this), this.content);
-
     this.reveal = this.revealContent.curry(function() {
       this.el.addClassName(this.options.openClass);
       // if one has been, set execute the callback function
@@ -73,7 +71,6 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
         this.options.callback();
       }
     }.bind(this), this.content);
-
     this.resetContentCSS(this.content);
     // if autohide is set, auto... hide...
     if (this.options.autoHide) {
@@ -93,6 +90,8 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
       padding: 0,
       overflow: 'hidden'
     });
+    content.store('openHeight', content.measure('margin-box-height'));
+    content.setStyle({ height: 0 });
   },
   /**
    *  Shodan.UI.SlideyPanel.revealContent()
@@ -116,7 +115,11 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
     var h = content.measure('margin-box-height');
     content.store('openHeight', h);
     content.morph('height:0', {
-      after: after,
+      after: function() {
+        if (typeof after === 'function') {
+          after();
+        }
+      },
       duration: this.options.duration,
       transition: this.options.transition
     });
@@ -162,10 +165,9 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
    **/
   build: function() {
     var firstItem = this.el.down('li');
-    this.el.select(this.options.contentSelector).each(function(el) {
+    this.el.select('ul.root>li>'+this.options.contentSelector).each(function(el) {
       this.resetContentCSS(el);
     }, this);
-    this.closeAll();
     this.revealContent(function() {
       firstItem.addClassName(this.options.openClass);
       // if one has been, set execute the callback function
@@ -176,20 +178,6 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
     this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
   },
   /**
-   *  Shodan.UI.Accordion.closeAll()
-   **/
-  closeAll: function() {
-    this.el.select(this.options.contentSelector).each(function(el) {
-      this.hideContent(function() {
-        el.previous(this.options.toggleSelector).removeClassName(this.options.openClass);
-        // if one has been, set execute the callback function
-        if (typeof this.options.callback === 'function') {
-          this.options.callback();
-        }
-      }.bind(this), el);
-    }.bind(this));
-  },
-  /**
    *  Shodan.UI.Accordion.onClick(event, el)
    *  - event (Event): native event instance
    *  - el (DOMElement): target DOM element
@@ -197,8 +185,8 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
   onClick: function(e, el) {
     var content = $(el).next(this.options.contentSelector),
         clickedLi = el.up('li'), open;
-
     if (clickedLi.hasClassName(this.options.openClass)) {
+      // user toggles an open item
       this.hideContent(function() {
         clickedLi.removeClassName(this.options.openClass);
         // if one has been, set execute the callback function
@@ -207,6 +195,8 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
         }
       }.bind(this), clickedLi.down(this.options.contentSelector));
     } else {
+      // user toggles a closed item. Are we allowing multiple open items?
+      // If not, close the current open item
       if ((open = this.el.down('.'+this.options.openClass)) && !this.options.allowMultiOpen) {
         this.hideContent(function() {
           open.removeClassName(this.options.openClass);
@@ -216,6 +206,7 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
           }
         }.bind(this), open.down(this.options.contentSelector));
       }
+      // Now open the item the user clicked on
       this.revealContent(function() {
         content.up('li').addClassName(this.options.openClass);
         // if one has been, set execute the callback function
