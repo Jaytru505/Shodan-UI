@@ -1,3 +1,14 @@
+Shodan.UI
+=========
+
 A collection of Prototype.js and Scripty2 powered UI components.
 
-See demos and documentation at http://shodanuk.github.com/Shodan-UI
+Usage and demos
+---------------
+
+See the http://shodanuk.github.com/Shodan.UI for usage instructions and demos.
+
+License
+-------
+
+Shodan.UI is licensed under the terms of the MIT License, see the included MIT-LICENSE file.
