@@ -1,7 +1,7 @@
 /** section: Shodan UI
  *  class Shodan.UI.Slideshow < Shodan.UI.Base
  *
- *  A simple slideshow component
+ *  A simple image slideshow
  **/
 Shodan.UI.Slideshow = Class.create(Shodan.UI.Base, {
   initialize: function($super, el, options) {
@@ -41,7 +41,7 @@ Shodan.UI.Slideshow = Class.create(Shodan.UI.Base, {
       height: this.options.height+'px',
       overflow: 'hidden',
       position: 'relative',
-      width: this.options.width+'px',
+      width: this.options.width+'px'
     });
 
     if (this.options.displayTitle) {
