@@ -18,7 +18,13 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
 
       // contentSelector (String)
       // CSS selector for the sub menu to be toggled.
-      contentSelector: '.sub'
+      contentSelector: '.sub',
+
+      // initialOpenItem (String|bool)
+      // Determines if the accordion starts with an item initially open. Use
+      // 'first' to have the first item open or a CSS selector to select the
+      // initially open item.
+      initialOpenItem: false
     }, options || {});
     $super(el, this.options);
   },
@@ -26,7 +32,10 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
    *  Shodan.UI.Accordion.build()
    **/
   build: function() {
-    var firstItem = this.el.down('li');
+    // when the component is initialised, add the click handler
+    this.el.observe('component:ready', function() {
+      this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
+    }.bind(this));
 
     this.callback = function() {
       if (typeof this.options.callback === 'function') {
@@ -36,15 +45,28 @@ Shodan.UI.Accordion = Class.create(Shodan.UI.SlideyPanel, {
 
     this.el.select('ul.root>li>'+this.options.contentSelector).each(function(el) {
       this.resetContentCSS(el);
-      this.hideContent(el, this.callback);
+      el.setStyle('height: 0');
     }, this);
 
-    this.revealContent(firstItem.down(this.options.contentSelector), function() {
-      firstItem.addClassName(this.options.openClass);
-      this.callback();
-    }.bind(this));
+    if (this.options.initialOpenItem) {
+      var initialItem, cb;
 
-    this.el.on('click', this.options.toggleSelector, this.onClick.bind(this));
+      if (this.options.initialOpenItem === 'first') {
+        initialItem = this.el.down('li');
+      } else {
+        initialItem = this.el.down(this.options.initialOpenItem);
+      }
+
+      cb = function() {
+        initialItem.addClassName(this.options.openClass);
+        this.callback();
+        this.el.fire('component:ready');
+      }.bind(this);
+
+      this.revealContent(initialItem.down(this.options.contentSelector), cb);
+    } else {
+      this.el.fire('component:ready');
+    }
   },
   /**
    *  Shodan.UI.Accordion.onClick(event, el)
