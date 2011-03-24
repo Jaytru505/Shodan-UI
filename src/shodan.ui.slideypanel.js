@@ -113,7 +113,7 @@ Shodan.UI.SlideyPanel = Class.create(Shodan.UI.Base, {
    **/
   onClick: function(e, el) {
     e.stop();
-    (this.el.hasClassName(this.options.openClass)) ? this._hide() : this._reveal();
+    this.el.hasClassName(this.options.openClass) ? this._hide() : this._reveal();
   },
   /**
    *  Shodan.UI.SlideyPanel.resetContentCSS(content)

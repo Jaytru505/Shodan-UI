@@ -109,9 +109,7 @@ Shodan.UI.Slideshow = Class.create(Shodan.UI.Base, {
         }.bind(this),
         before: function() {
           currentSlide.setStyle({ zIndex: 10 });
-          nextSlide.
-            setStyle({ zIndex: 20 }).
-            setOpacity(0);
+          nextSlide.setStyle({ zIndex: 20 }).setOpacity(0);
           this.slideAnimating = true;
         }.bind(this),
         duration: this.options.transitionDuration,
@@ -125,9 +123,7 @@ Shodan.UI.Slideshow = Class.create(Shodan.UI.Base, {
       after: function() {
         this.slideTitle.morph('opacity: 1', {
           before: function() {
-            this.slideTitle.
-              setOpacity(0).
-              update(text);
+            this.slideTitle.setOpacity(0).update(text);
           }.bind(this),
           duration: (this.options.transitionDuration / 2)
         });
