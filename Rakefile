@@ -15,7 +15,7 @@ SHODAN_UI_FILES    = [
   File.join(SHODAN_UI_SRC_DIR,'shodan.ui.slideshow.js')
 ]
 
-task :default => [:clean, :concat, :dist]
+task :default => [:clean, :concat, :googledist]
 
 desc "Clean the distribution directory."
 task :clean do
